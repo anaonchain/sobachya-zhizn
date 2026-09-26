@@ -38,6 +38,28 @@
   @keyframes pop{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-80px)}}
   #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0e1d;z-index:20;
     color:var(--dim);font-size:14px;letter-spacing:.2em}
+  /* ── touch controls ── */
+  #touch{display:none}
+  #touch.on{display:block}
+  #joy{position:fixed;left:20px;bottom:26px;width:132px;height:132px;border-radius:50%;
+    background:rgba(13,17,38,.5);border:1px solid var(--line);z-index:8;touch-action:none;pointer-events:auto}
+  #knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;
+    background:var(--panel);border:1px solid var(--gold);will-change:transform}
+  #tbtns{position:fixed;right:16px;bottom:26px;display:flex;flex-direction:column;gap:12px;z-index:8}
+  #tbtns button{width:78px;height:78px;border-radius:50%;font-size:14px;font-weight:700;pointer-events:auto;
+    background:var(--panel);border:1px solid var(--line);color:var(--ink);font-family:var(--font);touch-action:none}
+  #tbtns button:active{border-color:var(--gold);color:var(--gold)}
+  #thint{display:none;font-size:12px;color:var(--dim);line-height:1.6}
+  #thint.on{display:block}
+  @media (max-width:640px){
+    .hud.top{flex-wrap:wrap;gap:6px;padding:8px 10px}
+    .hud.top .box{font-size:12px;padding:6px 9px}
+    .hud.top .ttl{order:-1}
+    #meter{width:130px}
+    .hud.bottom{padding:8px 10px 172px}
+    .desktop-only{display:none}
+    #barkBtn{display:none}
+  }
 </style>
 </head>
 <body>
@@ -58,13 +80,23 @@
 </div>
 
 <div class="hud bottom">
-  <span class="box" id="hint">
+  <span class="box desktop-only" id="hint">
     WASD / стрелки — гулять · SHIFT — носиться · SPACE — ГАВ<br>
     E — копать у кучки · клик по Жуле — погладить<br>
     звук живой: ручей — на западе, гул — под фонарями
   </span>
+  <span class="box" id="thint">джойстик — гулять · ГАВ / КОП / БЕГ — кнопки · тапни Жулю — погладить</span>
   <span class="sp"></span>
   <button class="b" id="barkBtn">ГАВ! 🐕</button>
+</div>
+
+<div id="touch">
+  <div id="joy"><div id="knob"></div></div>
+  <div id="tbtns">
+    <button id="tdig">КОП 🦴</button>
+    <button id="trun">БЕГ »</button>
+    <button id="tbark">ГАВ 🐕</button>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -410,6 +442,36 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 document.getElementById('barkBtn').onclick=()=>doBark();
 
+/* ── тач-управление (телефон/планшет) ── */
+const tjoy={x:0,y:0,active:false};
+let runHold=false;
+function audioKick(){try{initAmbient();if(AC&&AC.state==='suspended')AC.resume();}catch(e){}}
+(function touchControls(){
+  const isTouch=matchMedia('(pointer:coarse)').matches||('ontouchstart'in window)||navigator.maxTouchPoints>0;
+  if(!isTouch)return;
+  document.getElementById('touch').classList.add('on');
+  document.getElementById('thint').classList.add('on');
+  const joy=document.getElementById('joy'),knob=document.getElementById('knob');
+  const R=52;let cx=0,cy=0;
+  function place(px,py){let dx=px-cx,dy=py-cy;const d=Math.hypot(dx,dy);if(d>R){dx=dx/d*R;dy=dy/d*R;}
+    knob.style.transform='translate('+dx+'px,'+dy+'px)';tjoy.x=dx/R;tjoy.y=-dy/R;}
+  joy.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();
+    const r=joy.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;
+    tjoy.active=true;joy.setPointerCapture&&joy.setPointerCapture(e.pointerId);place(e.clientX,e.clientY);audioKick();});
+  joy.addEventListener('pointermove',e=>{if(!tjoy.active)return;e.preventDefault();place(e.clientX,e.clientY);});
+  function endJoy(e){if(e)e.preventDefault();tjoy.active=false;tjoy.x=0;tjoy.y=0;knob.style.transform='';}
+  joy.addEventListener('pointerup',endJoy);joy.addEventListener('pointercancel',endJoy);joy.addEventListener('lostpointercapture',endJoy);
+  function hook(id,down,up){const b=document.getElementById(id);if(!b)return;
+    b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();audioKick();down();});
+    if(up)b.addEventListener('pointerup',e=>{e.preventDefault();up();});
+    if(up)b.addEventListener('pointercancel',up);}
+  hook('tbark',()=>doBark());
+  hook('tdig',()=>dig());
+  hook('trun',()=>{runHold=true;},()=>{runHold=false;});
+})();
+addEventListener('pointerdown',audioKick,{once:true});
+addEventListener('touchstart',audioKick,{once:true});
+
 function doBark(){
   bark();pop('ГАВ!','#ff5c8a');addHappy(1);
   pigeons.forEach(p=>{
@@ -456,9 +518,10 @@ function animate(){
   const dt=Math.min(clock.getDelta(),0.05),t=clock.elapsedTime;
 
   /* движение */
-  const run=(keys.ShiftLeft||keys.ShiftRight)?2:1;
-  const fwd=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
-  const turn=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0);
+  let fwd=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
+  let turn=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0);
+  if(tjoy.active){ fwd=tjoy.y; turn=-tjoy.x; }
+  const run=((keys.ShiftLeft||keys.ShiftRight)||runHold)?2:1;
   dog.rotation.y+=turn*2.4*dt;
   const speed=fwd*7*run;
   dog.position.x+=Math.sin(dog.rotation.y)*speed*dt;
