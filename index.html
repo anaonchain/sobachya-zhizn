@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Собачья жизнь</title>
+<style>
+  :root{--ink:#f2ecdc;--dim:#9aa3c7;--neon:#ff5c8a;--gold:#ffd977;--teal:#3fd2c7;--panel:rgba(13,17,38,.9);--line:#2a3157;
+        --font:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:#0b0e1d;color:var(--ink);font-family:var(--font);overflow:hidden}
+  #c{display:block;width:100%;height:100%}
+  .hud{position:fixed;left:0;right:0;display:flex;gap:10px;align-items:center;padding:10px 14px;pointer-events:none;z-index:5}
+  .hud.top{top:0}
+  .hud .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;pointer-events:auto}
+  .hud .ttl{color:var(--neon);font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+  .sp{flex:1}
+  #meter{width:190px}
+  #meter .lbl{font-size:11px;color:var(--dim);letter-spacing:.14em;margin-bottom:5px}
+  #meter .bar{height:10px;border-radius:99px;background:#1a2142;overflow:hidden}
+  #meter .fill{height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--neon),var(--gold));transition:width .4s}
+  button.b{background:var(--panel);border:1px solid var(--line);color:var(--ink);font-family:var(--font);
+    font-size:13px;padding:9px 13px;border-radius:10px;cursor:pointer;pointer-events:auto}
+  button.b:hover{border-color:var(--gold);color:var(--gold)}
+  .hud.bottom{bottom:0}
+  #hint{font-size:12px;color:var(--dim);line-height:1.6}
+  #toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--gold);
+    color:var(--gold);padding:9px 16px;border-radius:99px;font-size:13px;opacity:0;transition:opacity .3s;z-index:6;white-space:nowrap}
+  #banner{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(5,7,16,.75);z-index:9}
+  #banner .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:30px 34px;text-align:center;max-width:92vw}
+  #banner h1{color:var(--gold);font-size:clamp(20px,4vw,30px);letter-spacing:.1em;margin-bottom:10px}
+  #banner p{color:var(--dim);font-size:14.5px;line-height:1.6;margin-bottom:16px}
+  #banner button{background:var(--neon);border:none;color:#20081a;font-weight:700;font-family:var(--font);
+    font-size:14px;padding:12px 20px;border-radius:10px;cursor:pointer}
+  .pop{position:fixed;z-index:7;pointer-events:none;font:700 20px var(--font);color:var(--gold);
+    animation:pop 1.4s ease-out forwards;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  @keyframes pop{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-80px)}}
+  #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0e1d;z-index:20;
+    color:var(--dim);font-size:14px;letter-spacing:.2em}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="load">РАЙОН ПРОСЫПАЕТСЯ…</div>
+
+<div class="hud top">
+  <span class="box ttl">Собачья жизнь</span>
+  <span class="box" id="scnt">🌭 0/6</span>
+  <span class="box" id="bcnt">🦴 0/3</span>
+  <span class="sp"></span>
+  <span class="box" id="meter">
+    <div class="lbl">СОБАЧЬЕ СЧАСТЬЕ</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+  </span>
+  <button class="b" id="art" title="Артборд игры">🎨 артборд</button>
+  <button class="b" id="mute">🔊</button>
+</div>
+
+<div class="hud bottom">
+  <span class="box" id="hint">
+    WASD / стрелки — гулять · SHIFT — носиться · SPACE — ГАВ<br>
+    E — копать у кучки · клик по Жуле — погладить<br>
+    звук живой: ручей — на западе, гул — под фонарями
+  </span>
+  <span class="sp"></span>
+  <button class="b" id="barkBtn">ГАВ! 🐕</button>
+</div>
+
+<div id="toast"></div>
+<div id="banner">
+  <div class="card">
+    <h1>СОБАЧЬЯ ЖИЗНЬ УДАЛАСЬ</h1>
+    <p>Все сосиски найдены. Все кости откопаны. Все голуби построены.<br>
+       Жуля официально счастлива. Район может спать спокойно.</p>
+    <button id="more">Гулять дальше</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script>
+'use strict';
+/* ── аудио ── */
+let AC=null,muted=false;
+function beep(f,d,type,vol){
+  if(muted)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type=type||'square';o.frequency.value=f;
+    g.gain.setValueAtTime(vol||0.04,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001,AC.currentTime+(d||0.1));
+    o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+(d||0.1));
+  }catch(e){}
+}
+function bark(){beep(180,.09,'square',.07);setTimeout(()=>beep(140,.12,'square',.07),90);}
+function fanfare(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.18,'triangle',.06),i*140));}
+document.getElementById('mute').onclick=e=>{muted=!muted;e.target.textContent=muted?'🔇':'🔊';if(amb)amb.master.gain.value=muted?0:1;};
+
+/* ── эмбиент: ручей, ветер, гул фонарей ── */
+let amb=null;
+function noiseBuf(brown){
+  const len=AC.sampleRate*2,buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);
+  let last=0;
+  for(let i=0;i<len;i++){
+    const w=Math.random()*2-1;
+    if(brown){last=(last+0.02*w)/1.02;d[i]=last*3.5;}else d[i]=w;
+  }
+  return buf;
+}
+function initAmbient(){
+  if(amb)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const master=AC.createGain();master.gain.value=muted?0:1;master.connect(AC.destination);
+    const s1=AC.createBufferSource();s1.buffer=noiseBuf(false);s1.loop=true;
+    const f1=AC.createBiquadFilter();f1.type='bandpass';f1.frequency.value=1100;f1.Q.value=0.9;
+    const g1=AC.createGain();g1.gain.value=0;
+    s1.connect(f1);f1.connect(g1);g1.connect(master);s1.start();
+    const s2=AC.createBufferSource();s2.buffer=noiseBuf(true);s2.loop=true;
+    const f2=AC.createBiquadFilter();f2.type='lowpass';f2.frequency.value=260;
+    const g2=AC.createGain();g2.gain.value=0.012;
+    s2.connect(f2);f2.connect(g2);g2.connect(master);s2.start();
+    const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=100;
+    const f3=AC.createBiquadFilter();f3.type='lowpass';f3.frequency.value=420;
+    const g3=AC.createGain();g3.gain.value=0;
+    o.connect(f3);f3.connect(g3);g3.connect(master);o.start();
+    amb={master,g1,g2,g3};
+  }catch(e){}
+}
+addEventListener('pointerdown',initAmbient,{once:true});
+addEventListener('keydown',initAmbient,{once:true});
+const _lv=new THREE.Vector3();
+function updateAmbient(t){
+  if(!amb)return;
+  const dx=Math.abs(dog.position.x-streamX(dog.position.z));
+  amb.g1.gain.value=0.11*Math.max(0,1-dx/34);
+  amb.g2.gain.value=0.012+Math.sin(t*0.35)*0.005;
+  let md=1e9;
+  lamps.forEach(l=>{l.getWorldPosition(_lv);const d=_lv.distanceTo(dog.position);if(d<md)md=d;});
+  amb.g3.gain.value=0.05*Math.max(0,1-md/12);
+}
+document.getElementById('art').onclick=()=>{window.open('artboard.html','_blank');};
+
+/* ── сцена ── */
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0d1128);
+scene.fog=new THREE.Fog(0x0d1128,60,160);
+const camera=new THREE.PerspectiveCamera(60,2,0.1,400);
+
+scene.add(new THREE.AmbientLight(0x8890c0,0.55));
+const moonlight=new THREE.DirectionalLight(0xbfd0ff,0.5);
+moonlight.position.set(-40,60,-30);scene.add(moonlight);
+
+/* луна и звёзды */
+const moon=new THREE.Mesh(new THREE.SphereGeometry(6,20,20),
+  new THREE.MeshBasicMaterial({color:0xf4e9c8}));
+moon.position.set(-70,70,-110);scene.add(moon);
+(function stars(){
+  const g=new THREE.BufferGeometry(),n=450,pos=new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const r=170+Math.random()*60,th=Math.random()*Math.PI*2,ph=Math.random()*Math.PI*0.45;
+    pos[i*3]=r*Math.cos(th)*Math.cos(ph);pos[i*3+1]=20+r*Math.sin(ph);pos[i*3+2]=r*Math.sin(th)*Math.cos(ph);
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xcdd6ff,size:0.7,sizeAttenuation:true})));
+})();
+
+/* земля */
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220),
+  new THREE.MeshLambertMaterial({color:0x18203a}));
+ground.rotation.x=-Math.PI/2;scene.add(ground);
+const yard=new THREE.Mesh(new THREE.CircleGeometry(46,40),
+  new THREE.MeshLambertMaterial({color:0x1d2745}));
+yard.rotation.x=-Math.PI/2;yard.position.y=0.01;scene.add(yard);
+
+/* ── ручеёк ── */
+const streamX=z=>-48+Math.sin(z*0.09)*5;
+(function makeStream(){
+  const N=60,pos=[],idx=[];
+  for(let i=0;i<=N;i++){
+    const z=-90+i*3,x=streamX(z);
+    pos.push(x-2,0.03,z, x+2,0.03,z);
+  }
+  for(let i=0;i<N;i++){
+    const a=i*2,b=a+1,c=a+2,d=a+3;
+    idx.push(a,b,c, b,d,c);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setIndex(idx);
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x1e4a7a,transparent:true,opacity:0.85,side:THREE.DoubleSide}));
+  scene.add(m);
+})();
+const foam=[];
+(function makeFoam(){
+  const geo=new THREE.SphereGeometry(0.07,5,5);
+  const mat=new THREE.MeshBasicMaterial({color:0x9fd4ff});
+  for(let i=0;i<26;i++){
+    const f=new THREE.Mesh(geo,mat);
+    f.userData={z:-90+Math.random()*180,j:(Math.random()-0.5)*2.6,v:3+Math.random()*2};
+    scene.add(f);foam.push(f);
+  }
+})();
+
+/* панельки с окнами (canvas-текстура) */
+function panelTexture(){
+  const cv=document.createElement('canvas');cv.width=128;cv.height=256;
+  const x=cv.getContext('2d');
+  x.fillStyle='#242b52';x.fillRect(0,0,128,256);
+  for(let r=0;r<12;r++)for(let c=0;c<5;c++){
+    x.fillStyle=Math.random()<0.38?'#ffd977':'#141a38';
+    x.fillRect(10+c*24,12+r*20,14,10);
+  }
+  const t=new THREE.CanvasTexture(cv);return t;
+}
+function panelka(x,z,w,h,d,ry){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshLambertMaterial({map:panelTexture()}));
+  m.position.set(x,h/2,z);m.rotation.y=ry||0;scene.add(m);return m;
+}
+panelka(-58,-52,26,44,12,0.15);
+panelka(0,-64,34,52,12,0);
+panelka(58,-50,26,40,12,-0.2);
+panelka(-66,10,12,36,26,0);
+panelka(66,14,12,32,26,0);
+
+/* гаражи */
+(function garages(){
+  for(let i=0;i<5;i++){
+    const g=new THREE.Mesh(new THREE.BoxGeometry(9,5,7),
+      new THREE.MeshLambertMaterial({color:i===2?0x3c2140:0x37406e}));
+    g.position.set(-24+i*12,2.5,56);scene.add(g);
+  }
+})();
+
+/* ларёк */
+(function kiosk(){
+  const k=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(8,5,6),new THREE.MeshLambertMaterial({color:0x1c4a4e}));
+  body.position.y=2.5;k.add(body);
+  const sign=new THREE.Mesh(new THREE.BoxGeometry(8.4,1.1,0.4),
+    new THREE.MeshBasicMaterial({color:0xff5c8a}));
+  sign.position.set(0,5.6,3);k.add(sign);
+  k.position.set(40,0,34);k.rotation.y=-0.6;scene.add(k);
+})();
+
+/* фонари */
+const lamps=[];
+function lamp(x,z){
+  const g=new THREE.Group();
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.24,9,8),
+    new THREE.MeshLambertMaterial({color:0x3a4166}));
+  pole.position.y=4.5;g.add(pole);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.7,10,10),
+    new THREE.MeshBasicMaterial({color:0xffe9a8}));
+  head.position.y=9;g.add(head);
+  const light=new THREE.PointLight(0xffd98a,0.9,26);
+  light.position.y=8.6;g.add(light);
+  g.position.set(x,0,z);scene.add(g);lamps.push(light);
+}
+lamp(-18,-14);lamp(18,-14);lamp(-18,22);lamp(18,22);lamp(0,44);
+
+/* лавки */
+function bench(x,z,ry){
+  const g=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:0x7c5a34});
+  const seat=new THREE.Mesh(new THREE.BoxGeometry(5,0.35,1.4),mat);seat.position.y=1;g.add(seat);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(5,1.2,0.25),mat);back.position.set(0,1.8,-0.6);g.add(back);
+  [-2,2].forEach(dx=>{
+    const leg=new THREE.Mesh(new THREE.BoxGeometry(0.3,1,1.2),new THREE.MeshLambertMaterial({color:0x54514f}));
+    leg.position.set(dx,0.5,0);g.add(leg);
+  });
+  g.position.set(x,0,z);g.rotation.y=ry;scene.add(g);
+}
+bench(-10,30,0.3);bench(12,-24,-2.6);bench(-30,-6,1.5);
+
+/* деревья */
+function tree(x,z,s){
+  const g=new THREE.Group();
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.5,3,7),
+    new THREE.MeshLambertMaterial({color:0x4a3826}));
+  trunk.position.y=1.5;g.add(trunk);
+  const crown=new THREE.Mesh(new THREE.ConeGeometry(2.6,5.5,8),
+    new THREE.MeshLambertMaterial({color:0x1d4032}));
+  crown.position.y=5.4;g.add(crown);
+  g.scale.setScalar(s||1);g.position.set(x,0,z);scene.add(g);
+}
+tree(-38,26,1.2);tree(-44,-18,1);tree(36,-30,1.4);tree(48,6,0.9);tree(-8,52,1.1);tree(26,50,0.8);
+
+/* светлячки */
+const flies=[];
+(function fireflies(){
+  const geo=new THREE.SphereGeometry(0.09,6,6);
+  const mat=new THREE.MeshBasicMaterial({color:0xffe36b});
+  for(let i=0;i<22;i++){
+    const f=new THREE.Mesh(geo,mat);
+    f.userData={x:(Math.random()-0.5)*80,z:(Math.random()-0.5)*80,p:Math.random()*6.28,s:0.5+Math.random()};
+    scene.add(f);flies.push(f);
+  }
+})();
+
+/* ── ЖУЛЯ (воксельный корги) ── */
+const dog=new THREE.Group();
+const FUR=0xd98f4e,FUR2=0xb9743a,CREAM=0xf3e2c3;
+function box(w,h,d,color,x,y,z,parent){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color}));
+  m.position.set(x,y,z);(parent||dog).add(m);return m;
+}
+box(1.6,1.3,3.2,FUR,0,1.15,0);              // корпус
+box(1.62,0.55,3.22,CREAM,0,0.72,0);          // пузо
+const head=new THREE.Group();head.position.set(0,1.9,1.9);dog.add(head);
+box(1.5,1.25,1.35,FUR,0,0,0,head);           // голова
+box(0.7,0.55,0.6,CREAM,0,-0.28,0.9,head);    // морда
+box(0.28,0.2,0.2,0x241505,0,-0.16,1.22,head);// нос
+box(0.2,0.22,0.1,0x1c1208,-0.38,0.18,0.69,head); // глаза
+box(0.2,0.22,0.1,0x1c1208,0.38,0.18,0.69,head);
+const earGeo=new THREE.ConeGeometry(0.34,0.9,4);
+[-0.5,0.5].forEach(dx=>{
+  const ear=new THREE.Mesh(earGeo,new THREE.MeshLambertMaterial({color:FUR2}));
+  ear.position.set(dx,0.95,-0.1);head.add(ear);
+});
+const legs=[];
+[[-0.55,1.15],[0.55,1.15],[-0.55,-1.15],[0.55,-1.15]].forEach(p=>{
+  const hip=new THREE.Group();hip.position.set(p[0],0.62,p[1]);dog.add(hip);
+  box(0.42,0.75,0.45,FUR2,0,-0.35,0,hip);
+  legs.push(hip);
+});
+const tail=new THREE.Group();tail.position.set(0,1.6,-1.6);dog.add(tail);
+box(0.4,0.4,0.9,CREAM,0,0.15,-0.35,tail);
+dog.position.set(0,0,8);
+scene.add(dog);
+
+/* ── сосиски ── */
+const sausages=[];
+function sausage(x,z){
+  const g=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:0xb0452c});
+  const mid=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,1.3,10),mat);
+  mid.rotation.z=Math.PI/2;g.add(mid);
+  [-0.65,0.65].forEach(dx=>{
+    const cap=new THREE.Mesh(new THREE.SphereGeometry(0.28,10,10),mat);
+    cap.position.x=dx;g.add(cap);
+  });
+  g.position.set(x,1,z);scene.add(g);sausages.push(g);
+}
+[[14,10],[-20,-20],[30,-12],[-34,14],[8,-36],[-6,40]].forEach(p=>sausage(p[0],p[1]));
+
+/* ── кучки для раскопок ── */
+const mounds=[];
+function mound(x,z){
+  const m=new THREE.Mesh(new THREE.SphereGeometry(1.3,12,10),
+    new THREE.MeshLambertMaterial({color:0x5a4630}));
+  m.scale.y=0.45;m.position.set(x,0.25,z);scene.add(m);
+  m.userData.dug=false;mounds.push(m);
+}
+mound(-26,34);mound(24,28);mound(-12,-30);
+
+/* ── голуби ── */
+const pigeons=[];
+function pigeon(x,z){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.SphereGeometry(0.42,10,10),
+    new THREE.MeshLambertMaterial({color:0x8b93a8}));
+  body.scale.z=1.3;g.add(body);
+  const hd=new THREE.Mesh(new THREE.SphereGeometry(0.22,8,8),
+    new THREE.MeshLambertMaterial({color:0x6f7890}));
+  hd.position.set(0,0.35,0.42);g.add(hd);
+  const beak=new THREE.Mesh(new THREE.ConeGeometry(0.08,0.25,6),
+    new THREE.MeshLambertMaterial({color:0xe0a23b}));
+  beak.rotation.x=Math.PI/2;beak.position.set(0,0.35,0.66);g.add(beak);
+  g.position.set(x,0.42,z);g.userData={home:[x,z],scared:0,hop:Math.random()*6.28};
+  scene.add(g);pigeons.push(g);
+}
+pigeon(6,18);pigeon(-14,12);pigeon(20,2);pigeon(-4,-16);pigeon(34,18);
+
+/* ── HUD-логика ── */
+let happy=0,sc=0,bc=0,done=false;
+const fill=document.getElementById('fill');
+function addHappy(n){
+  happy=Math.min(100,happy+n);fill.style.width=happy+'%';
+  if(happy>=100&&!done){done=true;fanfare();
+    setTimeout(()=>{document.getElementById('banner').style.display='flex';},500);
+    flip=1.2;
+  }
+}
+function toast(t){
+  const el=document.getElementById('toast');el.textContent=t;el.style.opacity=1;
+  clearTimeout(el._t);el._t=setTimeout(()=>el.style.opacity=0,2100);
+}
+function pop(text,color){
+  const v=dog.position.clone();v.y+=3.2;v.project(camera);
+  const el=document.createElement('div');el.className='pop';
+  el.style.left=((v.x*0.5+0.5)*innerWidth)+'px';
+  el.style.top=((-v.y*0.5+0.5)*innerHeight)+'px';
+  if(color)el.style.color=color;
+  el.textContent=text;document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1400);
+}
+document.getElementById('more').onclick=()=>{document.getElementById('banner').style.display='none';};
+
+/* ── управление ── */
+const keys={};
+addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(e.code==='Space'){e.preventDefault();doBark();}
+  if(e.code==='KeyE')dig();
+});
+addEventListener('keyup',e=>{keys[e.code]=false;});
+document.getElementById('barkBtn').onclick=()=>doBark();
+
+function doBark(){
+  bark();pop('ГАВ!','#ff5c8a');addHappy(1);
+  pigeons.forEach(p=>{
+    if(p.position.distanceTo(dog.position)<16)p.userData.scared=3;
+  });
+}
+function dig(){
+  for(const m of mounds){
+    if(!m.userData.dug&&m.position.distanceTo(dog.position)<3.4){
+      m.userData.dug=true;bc++;document.getElementById('bcnt').textContent='🦴 '+bc+'/3';
+      beep(300,.12,'sawtooth',.05);setTimeout(()=>beep(520,.14,'triangle',.05),140);
+      pop('🦴 КОСТОЧКА!');toast('Жуля откопала легендарную кость');
+      addHappy(12);
+      m.scale.setScalar(0.01);
+      return;
+    }
+  }
+  pop('копь-копь…','#9aa3c7');
+}
+
+/* погладить */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+addEventListener('pointerdown',e=>{
+  mouse.x=(e.clientX/innerWidth)*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;
+  ray.setFromCamera(mouse,camera);
+  if(ray.intersectObject(dog,true).length){
+    addHappy(4);beep(720,.09,'triangle',.05);
+    pop('❤','#ff5c8a');
+    if(Math.random()<0.3)toast('Жуля: уф-уф-уф (перевод: ещё)');
+  }
+});
+
+/* ── цикл ── */
+const clock=new THREE.Clock();
+let flip=0;
+function resize(){
+  const w=innerWidth,h=innerHeight;
+  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+}
+addEventListener('resize',resize);resize();
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05),t=clock.elapsedTime;
+
+  /* движение */
+  const run=(keys.ShiftLeft||keys.ShiftRight)?2:1;
+  const fwd=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
+  const turn=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0);
+  dog.rotation.y+=turn*2.4*dt;
+  const speed=fwd*7*run;
+  dog.position.x+=Math.sin(dog.rotation.y)*speed*dt;
+  dog.position.z+=Math.cos(dog.rotation.y)*speed*dt;
+  dog.position.x=Math.max(-95,Math.min(95,dog.position.x));
+  dog.position.z=Math.max(-95,Math.min(95,dog.position.z));
+
+  /* анимация тела */
+  const moving=Math.abs(speed)>0.1;
+  legs.forEach((l,i)=>{l.rotation.x=moving?Math.sin(t*11*run+(i%2?Math.PI:0))*0.6:0;});
+  tail.rotation.y=Math.sin(t*(moving?14:8))*0.6;
+  head.position.y=1.9+(moving?Math.abs(Math.sin(t*11*run))*0.08:Math.sin(t*2)*0.03);
+  if(flip>0){flip-=dt;dog.rotation.x=Math.sin((1.2-flip)/1.2*Math.PI*2)*0.9;if(flip<=0)dog.rotation.x=0;}
+
+  /* сосиски */
+  sausages.forEach(s=>{
+    if(!s.visible)return;
+    s.rotation.y+=dt*2;s.position.y=1+Math.sin(t*3+s.position.x)*0.15;
+    if(s.position.distanceTo(dog.position)<2.2){
+      s.visible=false;sc++;document.getElementById('scnt').textContent='🌭 '+sc+'/6';
+      beep(660,.1,'triangle',.06);pop('🌭 НЯМ');addHappy(12);
+      if(sc===6)toast('Все сосиски района — в Жуле');
+    }
+  });
+
+  /* голуби */
+  pigeons.forEach(p=>{
+    const u=p.userData;
+    if(u.scared>0){
+      u.scared-=dt;
+      p.position.y=Math.min(10,p.position.y+dt*9);
+      p.rotation.y+=dt*6;
+      if(u.scared<=0){
+        p.position.set(u.home[0]+(Math.random()-0.5)*8,0.42,u.home[1]+(Math.random()-0.5)*8);
+        p.rotation.y=0;
+      }
+    }else{
+      u.hop+=dt*3;
+      p.position.y=0.42+Math.abs(Math.sin(u.hop))*0.25;
+    }
+  });
+
+  /* пена ручья */
+  foam.forEach(f=>{
+    const u=f.userData;u.z+=u.v*dt;if(u.z>90)u.z=-90;
+    f.position.set(streamX(u.z)+u.j,0.09,u.z);
+  });
+  updateAmbient(t);
+
+  /* светлячки */
+  flies.forEach(f=>{
+    const u=f.userData;
+    f.position.set(u.x+Math.sin(t*u.s)*2.4,1.4+Math.sin(t*u.s*1.7+u.p)*0.8,u.z+Math.cos(t*u.s*0.8+u.p)*2.4);
+  });
+
+  /* фонари слегка дышат */
+  lamps.forEach((l,i)=>{l.intensity=0.85+Math.sin(t*2+i*1.7)*0.1;});
+
+  /* камера за собакой */
+  const back=new THREE.Vector3(-Math.sin(dog.rotation.y),0,-Math.cos(dog.rotation.y));
+  const target=dog.position.clone().add(back.multiplyScalar(11)).add(new THREE.Vector3(0,6.5,0));
+  camera.position.lerp(target,1-Math.pow(0.0015,dt));
+  camera.lookAt(dog.position.x,dog.position.y+2,dog.position.z);
+
+  renderer.render(scene,camera);
+}
+document.getElementById('load').remove();
+console.log('[sobachka] жуля в 3d, район отрисован, собачья жизнь пошла');
+animate();
+</script>
+</body>
+</html>

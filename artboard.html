@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Артборд района</title>
+<style>
+  :root{--bg:#0b0e1d;--panel:#141a33;--ink:#f2ecdc;--dim:#9aa3c7;--neon:#ff5c8a;--gold:#ffd977;--teal:#3fd2c7;--line:#2a3157;
+        --font:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);padding:28px 16px 60px}
+  header{max-width:1040px;margin:0 auto 26px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  h1{margin:0;font-size:clamp(20px,4vw,30px);letter-spacing:.14em;color:var(--neon);text-transform:uppercase}
+  header p{margin:0;color:var(--dim);font-size:13px}
+  header a{margin-left:auto;color:var(--teal);font-size:13px;text-decoration:none;border:1px solid var(--line);
+    padding:8px 12px;border-radius:9px}
+  header a:hover{border-color:var(--teal)}
+  .grid{max-width:1040px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+  .art{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    box-shadow:0 18px 44px rgba(0,0,0,.45)}
+  .art svg{display:block;width:100%;height:auto}
+  .cap{padding:12px 16px 15px;border-top:1px solid var(--line)}
+  .cap b{display:block;color:var(--gold);font-size:14px;letter-spacing:.1em;text-transform:uppercase}
+  .cap span{color:var(--dim);font-size:12.5px;line-height:1.55;display:block;margin-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Артборд района</h1>
+  <p>наборчик из четырёх артов · всё нарисовано кодом</p>
+  <a href="index.html">← в игру</a>
+</header>
+
+<div class="grid">
+
+  <!-- АРТ 1: ЖУЛЯ.EXE -->
+  <figure class="art" style="margin:0">
+    <svg viewBox="0 0 400 400" role="img" aria-label="Постер: воксельная корги Жуля">
+      <rect width="400" height="400" fill="#101426"/>
+      <g fill="#1a2142"><rect x="20" y="20" width="360" height="360" rx="8" fill="none" stroke="#2a3157" stroke-width="2"/></g>
+      <circle cx="320" cy="80" r="30" fill="#f4e9c8"/><circle cx="308" cy="72" r="26" fill="#101426"/>
+      <!-- воксельная Жуля анфас -->
+      <g transform="translate(200,225)">
+        <rect x="-70" y="-40" width="140" height="90" rx="8" fill="#d98f4e"/>
+        <rect x="-70" y="30" width="140" height="24" rx="8" fill="#f3e2c3"/>
+        <rect x="-52" y="54" width="26" height="34" rx="6" fill="#b9743a"/>
+        <rect x="26" y="54" width="26" height="34" rx="6" fill="#b9743a"/>
+        <g transform="translate(0,-84)">
+          <path d="M -58 -28 L -34 -64 L -22 -24 Z" fill="#b9743a"/>
+          <path d="M 58 -28 L 34 -64 L 22 -24 Z" fill="#b9743a"/>
+          <rect x="-56" y="-34" width="112" height="86" rx="14" fill="#d98f4e"/>
+          <rect x="-24" y="6" width="48" height="40" rx="10" fill="#f3e2c3"/>
+          <rect x="-10" y="14" width="20" height="13" rx="5" fill="#241505"/>
+          <rect x="-38" y="-8" width="15" height="16" rx="4" fill="#1c1208"/>
+          <rect x="23" y="-8" width="15" height="16" rx="4" fill="#1c1208"/>
+          <rect x="-34" y="-6" width="5" height="5" fill="#f2ecdc"/>
+          <rect x="27" y="-6" width="5" height="5" fill="#f2ecdc"/>
+          <path d="M -4 32 Q 0 36 4 32" stroke="#241505" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </g>
+        <g transform="translate(86,10) rotate(24)"><rect x="-8" y="-26" width="16" height="42" rx="8" fill="#f3e2c3"/></g>
+      </g>
+      <text x="200" y="356" text-anchor="middle" font-family="ui-monospace,monospace" font-size="24" fill="#ff5c8a" letter-spacing="10">ЖУЛЯ.EXE</text>
+      <text x="200" y="378" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10" fill="#9aa3c7" letter-spacing="4">ГЛАВНАЯ ПО СЧАСТЬЮ · 16 ВОКСЕЛЕЙ ЛЮБВИ</text>
+    </svg>
+    <figcaption class="cap"><b>Арт 01 · Жуля.exe</b>
+      <span>Героиня. Воксельная корги на службе района. Хвост виляет на 60 FPS, сердце — без ограничений по частоте.</span>
+    </figcaption>
+  </figure>
+
+  <!-- АРТ 2: РАЙОН. НОЧЬ. -->
+  <figure class="art" style="margin:0">
+    <svg viewBox="0 0 400 400" role="img" aria-label="Постер: район ночью">
+      <defs>
+        <linearGradient id="nsky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0d1128"/><stop offset="1" stop-color="#26305c"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="400" fill="url(#nsky)"/>
+      <circle cx="90" cy="80" r="34" fill="#f4e9c8"/><circle cx="104" cy="70" r="30" fill="url(#nsky)"/>
+      <g fill="#cdd6ff"><circle cx="220" cy="60" r="1.6"/><circle cx="300" cy="40" r="1.3"/><circle cx="350" cy="90" r="1.7"/><circle cx="260" cy="110" r="1.2"/><circle cx="180" cy="30" r="1.2"/><circle cx="330" cy="140" r="1.2"/></g>
+      <g>
+        <rect x="30" y="150" width="80" height="190" fill="#242b52"/>
+        <rect x="150" y="120" width="100" height="220" fill="#2a3157"/>
+        <rect x="290" y="170" width="80" height="170" fill="#242b52"/>
+        <g fill="#ffd977">
+          <rect x="42" y="166" width="12" height="9"/><rect x="70" y="196" width="12" height="9"/><rect x="42" y="256" width="12" height="9"/>
+          <rect x="166" y="140" width="12" height="9"/><rect x="196" y="170" width="12" height="9"/><rect x="226" y="230" width="12" height="9"/>
+          <rect x="304" y="190" width="12" height="9"/><rect x="332" y="250" width="12" height="9"/>
+        </g>
+      </g>
+      <rect y="340" width="400" height="60" fill="#14182c"/>
+      <path d="M 20 352 Q 60 344 90 352 T 170 352 T 250 352 T 330 352 T 396 352" stroke="#1e4a7a" stroke-width="9" fill="none" opacity=".9"/>
+      <rect x="196" y="240" width="5" height="102" fill="#3a4166"/>
+      <ellipse cx="198" cy="240" rx="12" ry="6" fill="#ffe9a8"/>
+      <path d="M 198 244 L 168 342 L 230 342 Z" fill="#ffe19a" opacity=".14"/>
+      <g transform="translate(214,332) scale(.8)">
+        <ellipse cx="0" cy="0" rx="22" ry="11" fill="#d98f4e"/>
+        <circle cx="19" cy="-10" r="9" fill="#d98f4e"/>
+        <path d="M 14 -16 L 11 -25 L 19 -19 Z" fill="#b9743a"/><path d="M 24 -16 L 27 -25 L 19 -19 Z" fill="#b9743a"/>
+        <rect x="-14" y="7" width="5" height="9" fill="#a0754a"/><rect x="6" y="7" width="5" height="9" fill="#a0754a"/>
+        <path d="M -20 -4 Q -30 -12 -27 -18" stroke="#96683d" stroke-width="5" fill="none" stroke-linecap="round"/>
+      </g>
+      <text x="200" y="382" text-anchor="middle" font-family="ui-monospace,monospace" font-size="17" fill="#3fd2c7" letter-spacing="8">РАЙОН. НОЧЬ.</text>
+    </svg>
+    <figcaption class="cap"><b>Арт 02 · Район. Ночь.</b>
+      <span>Локация. Панельки держат небо, фонарь держит свет, ручеёк держит бит. Все окна, что горят, — это кто-то ждёт собачку.</span>
+    </figcaption>
+  </figure>
+
+  <!-- АРТ 3: СОСИСКА ЛЕГЕНДАРНАЯ -->
+  <figure class="art" style="margin:0">
+    <svg viewBox="0 0 400 400" role="img" aria-label="Карточка предмета: легендарная сосиска">
+      <rect width="400" height="400" fill="#101426"/>
+      <rect x="34" y="30" width="332" height="340" rx="14" fill="#141a33" stroke="#ffd977" stroke-width="2"/>
+      <text x="200" y="66" text-anchor="middle" font-family="ui-monospace,monospace" font-size="13" fill="#ffd977" letter-spacing="6">ПРЕДМЕТ · ЭПИЧЕСКИЙ</text>
+      <g transform="translate(200,170) rotate(-18)">
+        <rect x="-90" y="-26" width="180" height="52" rx="26" fill="#b0452c"/>
+        <rect x="-90" y="-26" width="180" height="20" rx="10" fill="#c85a3a" opacity=".7"/>
+        <path d="M -96 0 Q -108 -10 -104 -18 M 96 0 Q 108 -10 104 -18" stroke="#8a3520" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <g stroke="#8a3520" stroke-width="3"><path d="M -40 -26 L -34 26 M 0 -26 L 6 26 M 40 -26 L 46 26"/></g>
+      </g>
+      <g font-family="ui-monospace,monospace" font-size="13" fill="#9aa3c7">
+        <text x="70" y="262">СЫТНОСТЬ</text><text x="330" y="262" text-anchor="end" fill="#f2ecdc">+12 СЧАСТЬЯ</text>
+        <text x="70" y="290">РЕДКОСТЬ</text><text x="330" y="290" text-anchor="end" fill="#ff5c8a">6 НА РАЙОН</text>
+        <text x="70" y="318">ЗАПАХ</text><text x="330" y="318" text-anchor="end" fill="#f2ecdc">СЛЫШНО С БАЛКОНА</text>
+      </g>
+      <text x="200" y="356" text-anchor="middle" font-family="ui-monospace,monospace" font-size="18" fill="#ffd977" letter-spacing="4">СОСИСКА ЛЕГЕНДАРНАЯ</text>
+    </svg>
+    <figcaption class="cap"><b>Арт 03 · Сосиска легендарная</b>
+      <span>Предмет коллекционирования. По легенде, у Зульфии есть седьмая, но её никто не видел и не увидит.</span>
+    </figcaption>
+  </figure>
+
+  <!-- АРТ 4: РАССКАЖИ ХУЙНЮ СОБАЧКЕ -->
+  <figure class="art" style="margin:0">
+    <svg viewBox="0 0 400 400" role="img" aria-label="Постер: расскажи хуйню собачке">
+      <rect width="400" height="400" fill="#1a1030"/>
+      <rect x="24" y="24" width="352" height="352" fill="none" stroke="#ff5c8a" stroke-width="2" stroke-dasharray="10 7"/>
+      <g transform="translate(200,178)">
+        <ellipse cx="0" cy="10" rx="72" ry="64" fill="#e8b96d"/>
+        <path d="M -58 -34 L -84 -84 L -28 -50 Z" fill="#c99a52"/>
+        <path d="M 58 -34 L 84 -84 L 28 -50 Z" fill="#c99a52"/>
+        <ellipse cx="0" cy="36" rx="34" ry="27" fill="#f6e3bd"/>
+        <ellipse cx="-26" cy="-4" rx="10" ry="12" fill="#1c1208"/>
+        <ellipse cx="26" cy="-4" rx="10" ry="12" fill="#1c1208"/>
+        <circle cx="-23" cy="-8" r="3" fill="#f2ecdc"/><circle cx="29" cy="-8" r="3" fill="#f2ecdc"/>
+        <ellipse cx="0" cy="26" rx="12" ry="9" fill="#241505"/>
+        <path d="M -34 -30 Q -22 -38 -12 -32 M 12 -32 Q 22 -38 34 -30" stroke="#8a6a3d" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M -8 44 Q 0 50 8 44" stroke="#241505" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+      </g>
+      <text x="200" y="300" text-anchor="middle" font-family="ui-monospace,monospace" font-size="19" fill="#f2ecdc" letter-spacing="3">РАССКАЖИ ХУЙНЮ</text>
+      <text x="200" y="326" text-anchor="middle" font-family="ui-monospace,monospace" font-size="19" fill="#f2ecdc" letter-spacing="3">СОБАЧКЕ</text>
+      <text x="200" y="356" text-anchor="middle" font-family="ui-monospace,monospace" font-size="10.5" fill="#9aa3c7" letter-spacing="2">ОНА НЕ ПОМОЖЕТ · НО ВЫСЛУШАЕТ · А ЭТО ГЛАВНОЕ</text>
+      <text x="352" y="52" text-anchor="end" font-family="ui-monospace,monospace" font-size="11" fill="#ffd977">™ patent pending*</text>
+      <text x="352" y="66" text-anchor="end" font-family="ui-monospace,monospace" font-size="8" fill="#9aa3c7">*авторское право уже действует само</text>
+    </svg>
+    <figcaption class="cap"><b>Арт 04 · Ритуал открытия</b>
+      <span>Фирменная механика студии. Копирайт возник автоматически в момент создания; товарный знак — если захотим имя защитить всерьёз.</span>
+    </figcaption>
+  </figure>
+
+</div>
+</body>
+</html>
